@@ -79,7 +79,9 @@ async def test_removed_source_is_logged(
 
 async def test_entry_without_optional_sources_loads(hass: HomeAssistant) -> None:
     entry = MockConfigEntry(
-        domain=DOMAIN, title="Planter", options={"model": "generic", "moisture_entity": "sensor.m"}
+        domain=DOMAIN,
+        title="Planter",
+        options={"model": "generic", "moisture_entity": "sensor.m", "pct0": 0, "pct100": 100},
     )
     entry.add_to_hass(hass)
 

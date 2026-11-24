@@ -15,7 +15,7 @@
           "name": "The probe's device name, for example its location.",
           "model": "Sets the default calibration. Pick Generic if your probe isn't listed.",
           "raw_ad_entity": "The probe's raw reading. Use this when the probe has one.",
-          "moisture_entity": "Only for a probe without a raw AD sensor.",
+          "moisture_entity": "Only for a probe without a raw AD sensor. Its percentage can be corrected on the device page.",
           "battery_entity": "Optional."
         }
       },
@@ -45,7 +45,7 @@
         },
         "data_description": {
           "raw_ad_entity": "The probe's raw reading. Use this when the probe has one.",
-          "moisture_entity": "Only for a probe without a raw AD sensor.",
+          "moisture_entity": "Only for a probe without a raw AD sensor. Its percentage can be corrected on the device page.",
           "battery_entity": "Optional."
         }
       },
@@ -61,6 +61,27 @@
     "error": {
       "one_source": "Pick either a raw AD sensor or a moisture % sensor, not both.",
       "span_too_small": "Must be at least 10 above the 0 % reading."
+    }
+  },
+  "entity": {
+    "number": {
+      "ad0": {
+        "name": "Raw AD at 0 %"
+      },
+      "ad100": {
+        "name": "Raw AD at 100 %"
+      },
+      "pct0": {
+        "name": "Source % at 0 %"
+      },
+      "pct100": {
+        "name": "Source % at 100 %"
+      }
+    }
+  },
+  "exceptions": {
+    "span_too_small": {
+      "message": "The 100 % reading must be at least {min_span} above the 0 % reading."
     }
   }
 }

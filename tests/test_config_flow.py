@@ -58,7 +58,12 @@ async def test_moisture_source_needs_no_calibration(hass: HomeAssistant) -> None
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["options"] == {"model": "generic", "moisture_entity": MOISTURE}
+    assert result["options"] == {
+        "model": "generic",
+        "moisture_entity": MOISTURE,
+        "pct0": 0,
+        "pct100": 100,
+    }
 
 
 @pytest.mark.parametrize(

@@ -22,6 +22,8 @@ from .const import (
     CONF_BATTERY_SOURCE,
     CONF_MODEL,
     CONF_MOISTURE_SOURCE,
+    CONF_PCT0,
+    CONF_PCT100,
     CONF_RAW_SOURCE,
     DOMAIN,
     SOURCE_KEYS,
@@ -103,7 +105,10 @@ def _needs_calibration(options: dict[str, Any]) -> bool:
 
 
 def _with_preset(options: dict[str, Any]) -> dict[str, Any]:
-    """Add the model's default calibration when a raw source has none yet."""
+    """Add the default calibration for the chosen source when it has none yet."""
+    if CONF_MOISTURE_SOURCE in options and CONF_PCT0 not in options:
+        # 0 and 100 leave the source's percentage unchanged.
+        return options | {CONF_PCT0: 0, CONF_PCT100: 100}
     model = MODELS[options[CONF_MODEL]]
     if not _needs_calibration(options) or model.ad0 is None or model.ad100 is None:
         return options
