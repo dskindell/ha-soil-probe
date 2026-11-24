@@ -1,0 +1,26 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# Let Home Assistant install its httpx alias before respx is imported.
+addopts = "-p no:respx"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "B", "I", "UP", "SIM", "C4", "PIE", "RUF", "PT"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.codespell]
+ignore-words-list = "hass"

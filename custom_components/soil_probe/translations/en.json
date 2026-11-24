@@ -1,0 +1,15 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a soil probe",
+        "data": {
+          "name": "Name"
+        },
+        "data_description": {
+          "name": "The probe's device name, for example its location."
+        }
+      }
+    }
+  }
+}

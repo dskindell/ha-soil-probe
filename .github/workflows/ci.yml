@@ -1,0 +1,92 @@
+# Tests, coverage floor, lint, formatting, spelling, workflow lint, type checking, repository rules,
+# hassfest and HACS validation on every push to main (and on pull requests).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/0.12.5/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Set up Python 3.14 and test dependencies
+        run: |
+          uv venv --python 3.14 .venv
+          uv pip install --python .venv/bin/python -r requirements_test.txt
+
+      - name: Tests with coverage floor
+        run: >
+          .venv/bin/python -m pytest -q
+          --cov=custom_components/soil_probe
+          --cov-branch --cov-report=term-missing --cov-fail-under=97
+
+      - name: Lint
+        run: uvx ruff@0.16.9 check custom_components tests scripts
+
+      - name: Format
+        run: uvx ruff@0.16.9 format --check custom_components tests scripts
+
+      - name: Spelling
+        run: uvx codespell@2.4.3 custom_components tests scripts README.md CONTRIBUTING.md .github pyproject.toml
+
+      - name: Workflow lint
+        run: uvx --from actionlint-py==1.7.12.25 actionlint .github/workflows/*.yml
+
+      - name: No design references in the code
+        run: .venv/bin/python scripts/check_rules.py references
+
+      - name: Commit messages
+        env:
+          PUSH_BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        # A force-push or a new branch has no usable "before", so only the tip is checked.
+        run: |
+          if [ -n "$PR_BASE" ]; then
+            range="$PR_BASE..$HEAD_SHA"
+          elif [ -n "$PUSH_BEFORE" ] && git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+            range="$PUSH_BEFORE..$HEAD_SHA"
+          else
+            range="$HEAD_SHA^!"
+          fi
+          .venv/bin/python scripts/check_rules.py commits "$range"
+
+      - name: Type check
+        run: |
+          uv pip install --python .venv/bin/python mypy==2.3.1
+          .venv/bin/python -m mypy custom_components/soil_probe
+
+  hassfest:
+    # Home Assistant's own integration validator (manifest, translations, config flow).
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: hassfest
+        uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    # The checks HACS runs before it lists a repository.
+    runs-on: ubuntu-latest
+    steps:
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration

@@ -1,0 +1,12 @@
+{
+  "domain": "soil_probe",
+  "name": "Soil Probe",
+  "codeowners": ["@dskindell"],
+  "config_flow": true,
+  "documentation": "https://github.com/dskindell/ha-soil-probe",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/dskindell/ha-soil-probe/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
