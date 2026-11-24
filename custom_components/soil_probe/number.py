@@ -6,56 +6,63 @@ from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .calibration import calibration_keys
+from .calibration import check_points, point_limits
 from .const import (
     CONF_AD0,
     CONF_AD100,
-    CONF_MODEL,
+    CONF_DRY_TARGET,
     CONF_PCT0,
     CONF_PCT100,
     CONF_RAW_SOURCE,
+    CONF_WET_TARGET,
+    DEFAULT_DRY_TARGET,
+    DEFAULT_WET_TARGET,
     DOMAIN,
     calibration_signal,
 )
 from .device import probe_device_info
-from .models import MIN_SPAN, MODELS
+
+# Targets of exactly 100 % dry or 0 % wet can't be solved for.
+_TARGETS = {
+    CONF_DRY_TARGET: (0, 90, DEFAULT_DRY_TARGET),
+    CONF_WET_TARGET: (10, 100, DEFAULT_WET_TARGET),
+}
+_ALL_KEYS = {CONF_AD0, CONF_AD100, CONF_PCT0, CONF_PCT100, *_TARGETS}
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddConfigEntryEntitiesCallback
 ) -> None:
-    """Add the numbers for the source's readings at 0 % and 100 %."""
-    low, high = calibration_keys(entry.options)
-    if CONF_RAW_SOURCE in entry.options:
-        model = MODELS[entry.options[CONF_MODEL]]
-        limits = {low: (0, model.ad0_max), high: (MIN_SPAN, model.ad100_max)}
-        unit = None
-    else:
-        limits = {low: (0, 100 - MIN_SPAN), high: (MIN_SPAN, 100)}
-        unit = PERCENTAGE
-    _remove_other_source_numbers(hass, entry, (low, high))
-    async_add_entities(
-        CalibrationNumber(entry, key, low, high, *limits[key], unit) for key in (low, high)
-    )
+    """Add the calibration points, and with a raw source the capture targets."""
+    raw = CONF_RAW_SOURCE in entry.options
+    unit = None if raw else PERCENTAGE
+    entities: list[_OptionNumber] = [
+        PointNumber(entry, key, minimum, maximum, unit)
+        for key, (minimum, maximum) in point_limits(entry.options).items()
+    ]
+    if raw:
+        entities += [
+            TargetNumber(entry, key, minimum, maximum, default)
+            for key, (minimum, maximum, default) in _TARGETS.items()
+        ]
+    _remove_unused_numbers(hass, entry, {entity.key for entity in entities})
+    async_add_entities(entities)
 
 
-def _remove_other_source_numbers(
-    hass: HomeAssistant, entry: ConfigEntry, keep: tuple[str, str]
-) -> None:
+def _remove_unused_numbers(hass: HomeAssistant, entry: ConfigEntry, keep: set[str]) -> None:
     """Drop the numbers left from the other source type after the source was swapped."""
     registry = er.async_get(hass)
-    for key in {CONF_AD0, CONF_AD100, CONF_PCT0, CONF_PCT100} - set(keep):
+    for key in _ALL_KEYS - keep:
         if entity_id := registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_{key}"):
             registry.async_remove(entity_id)
 
 
-class CalibrationNumber(NumberEntity):
-    """One of the two calibration points, stored in the entry's options."""
+class _OptionNumber(NumberEntity):
+    """A number stored in the entry's options."""
 
     _attr_has_entity_name = True
     _attr_entity_category = EntityCategory.CONFIG
@@ -64,19 +71,10 @@ class CalibrationNumber(NumberEntity):
     _attr_should_poll = False
 
     def __init__(
-        self,
-        entry: ConfigEntry,
-        key: str,
-        low: str,
-        high: str,
-        minimum: float,
-        maximum: float,
-        unit: str | None,
+        self, entry: ConfigEntry, key: str, minimum: float, maximum: float, unit: str | None
     ) -> None:
         self._entry = entry
-        self._key = key
-        self._low = low
-        self._high = high
+        self.key = key
         self._attr_translation_key = key
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_device_info = probe_device_info(entry)
@@ -84,18 +82,47 @@ class CalibrationNumber(NumberEntity):
         self._attr_native_max_value = maximum
         self._attr_native_unit_of_measurement = unit
 
-    @property
-    def native_value(self) -> float:
-        return float(self._entry.options[self._key])
+    async def async_added_to_hass(self) -> None:
+        # Captures and resets change the points from a button.
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, calibration_signal(self._entry.entry_id), self.async_write_ha_state
+            )
+        )
+
+    def _store(self, value: float) -> None:
+        options = {**self._entry.options, self.key: int(value)}
+        self._check(options)
+        self.hass.config_entries.async_update_entry(self._entry, options=options)
+        async_dispatcher_send(self.hass, calibration_signal(self._entry.entry_id))
+
+    def _check(self, options: dict[str, int]) -> None:
+        """Raise if the new options are invalid."""
 
     async def async_set_native_value(self, value: float) -> None:
-        options = {**self._entry.options, self._key: int(value)}
-        if options[self._high] - options[self._low] < MIN_SPAN:
-            raise ServiceValidationError(
-                translation_domain=DOMAIN,
-                translation_key="span_too_small",
-                translation_placeholders={"min_span": str(MIN_SPAN)},
-            )
-        self.hass.config_entries.async_update_entry(self._entry, options=options)
-        self.async_write_ha_state()
-        async_dispatcher_send(self.hass, calibration_signal(self._entry.entry_id))
+        self._store(value)
+
+
+class PointNumber(_OptionNumber):
+    """The source's reading at 0 % or at 100 % moisture."""
+
+    @property
+    def native_value(self) -> float:
+        return float(self._entry.options[self.key])
+
+    def _check(self, options: dict[str, int]) -> None:
+        check_points(options)
+
+
+class TargetNumber(_OptionNumber):
+    """The moisture % a capture solves for."""
+
+    def __init__(
+        self, entry: ConfigEntry, key: str, minimum: float, maximum: float, default: int
+    ) -> None:
+        super().__init__(entry, key, minimum, maximum, PERCENTAGE)
+        self._default = default
+
+    @property
+    def native_value(self) -> float:
+        return float(self._entry.options.get(self.key, self._default))

@@ -124,5 +124,6 @@ async def test_swapping_the_source_type_removes_the_old_numbers(
 
     assert entity_registry.async_get(AD0) is None
     assert entity_registry.async_get(AD100) is None
+    assert entity_registry.async_get("number.backyard_central_dry_capture_target") is None
     assert entity_registry.async_get(PCT0) is not None
     assert entry.options["pct0"] == 0

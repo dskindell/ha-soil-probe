@@ -14,6 +14,12 @@ CONF_AD0: Final = "ad0"
 CONF_AD100: Final = "ad100"
 CONF_PCT0: Final = "pct0"
 CONF_PCT100: Final = "pct100"
+CONF_DRY_TARGET: Final = "dry_target"
+CONF_WET_TARGET: Final = "wet_target"
+
+# Ecowitt's own calibration procedure aims for these readings in air and in water.
+DEFAULT_DRY_TARGET: Final = 10
+DEFAULT_WET_TARGET: Final = 95
 
 SOURCE_KEYS: Final = (CONF_RAW_SOURCE, CONF_MOISTURE_SOURCE, CONF_BATTERY_SOURCE)
 

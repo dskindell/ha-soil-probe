@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.const import PERCENTAGE
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 
-from .calibration import calibrated_moisture, calibration_keys
+from .calibration import calibrated_moisture, calibration_keys, reading_of
 from .const import CONF_MOISTURE_SOURCE, CONF_RAW_SOURCE, calibration_signal
 from .device import probe_device_info
 
@@ -20,15 +20,6 @@ async def async_setup_entry(
 ) -> None:
     """Add the probe's moisture sensor."""
     async_add_entities([MoistureSensor(entry)])
-
-
-def _number(state: State | None) -> float | None:
-    if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
-        return None
-    try:
-        return float(state.state)
-    except ValueError:
-        return None
 
 
 class MoistureSensor(SensorEntity):
@@ -70,7 +61,7 @@ class MoistureSensor(SensorEntity):
         self.async_write_ha_state()
 
     def _update(self, state: State | None) -> None:
-        reading = _number(state)
+        reading = reading_of(state)
         self._attr_available = reading is not None
         if reading is None:
             self._attr_native_value = None

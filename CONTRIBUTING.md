@@ -28,8 +28,10 @@ uvx pre-commit install
 - `config_flow.py`: adding a probe, and changing its sources under Configure. Schemas use `probatio`, Home Assistant's validation library since
   2026.11; don't import `voluptuous`.
 - `device.py`: the probe's device; every entity attaches to it.
-- `calibration.py`: the two-point formula shared by raw AD and moisture % sources.
-- `number.py`: the calibration numbers on the device page.
+- `calibration.py`: the two-point formula shared by raw AD and moisture % sources, and solving a
+  point from a capture.
+- `button.py`: capture dry, capture wet and reset calibration.
+- `number.py`: the calibration points and capture targets on the device page.
 - `sensor.py`: the calibrated moisture sensor.
 - `translations/en.json`: edited by hand.
 

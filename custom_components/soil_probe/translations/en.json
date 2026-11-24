@@ -76,12 +76,35 @@
       },
       "pct100": {
         "name": "Source % at 100 %"
+      },
+      "dry_target": {
+        "name": "Dry capture target"
+      },
+      "wet_target": {
+        "name": "Wet capture target"
+      }
+    },
+    "button": {
+      "capture_dry": {
+        "name": "Capture dry"
+      },
+      "capture_wet": {
+        "name": "Capture wet"
+      },
+      "reset_calibration": {
+        "name": "Reset calibration"
       }
     }
   },
   "exceptions": {
     "span_too_small": {
       "message": "The 100 % reading must be at least {min_span} above the 0 % reading."
+    },
+    "no_reading": {
+      "message": "{entity_id} has no reading to capture."
+    },
+    "point_out_of_range": {
+      "message": "The calibration point would be {value}, outside {min}–{max}."
     }
   }
 }
