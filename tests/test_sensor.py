@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 import pytest
-from pytest_homeassistant.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.soil_probe.calibration import calibrated_moisture
 from custom_components.soil_probe.const import DOMAIN
@@ -132,3 +134,106 @@ async def test_generic_probe_device_has_no_manufacturer(
     )
     assert device is not None
     assert (device.manufacturer, device.model) == (None, None)
+
+
+BATTERY = "sensor.wh51_battery"
+
+
+async def test_raw_and_battery_are_copied_onto_the_device(
+    hass: HomeAssistant, entity_registry: er.EntityRegistry
+) -> None:
+    hass.states.async_set(RAW, "285")
+    hass.states.async_set(BATTERY, "100")
+    entry = await _setup(
+        hass, model="wh51", raw_ad_entity=RAW, battery_entity=BATTERY, ad0=70, ad100=500
+    )
+
+    raw = hass.states.get("sensor.backyard_central_raw_ad")
+    battery = hass.states.get("sensor.backyard_central_battery")
+    assert raw is not None
+    assert battery is not None
+    assert float(raw.state) == 285
+    assert float(battery.state) == 100
+    assert battery.attributes["device_class"] == "battery"
+    assert battery.attributes["unit_of_measurement"] == "%"
+    for entity_id in ("sensor.backyard_central_raw_ad", "sensor.backyard_central_battery"):
+        entity = entity_registry.async_get(entity_id)
+        assert entity is not None
+        assert entity.entity_category is er.EntityCategory.DIAGNOSTIC
+        assert entity.config_entry_id == entry.entry_id
+
+    hass.states.async_set(BATTERY, STATE_UNAVAILABLE)
+    await hass.async_block_till_done()
+    assert hass.states.get("sensor.backyard_central_battery").state == STATE_UNAVAILABLE  # type: ignore[union-attr]
+
+
+async def test_copies_without_a_source_are_left_out_and_removed(
+    hass: HomeAssistant, entity_registry: er.EntityRegistry
+) -> None:
+    entry = await _setup(
+        hass, model="wh51", raw_ad_entity=RAW, battery_entity=BATTERY, ad0=70, ad100=500
+    )
+    assert entity_registry.async_get("sensor.backyard_central_battery") is not None
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(
+        result["flow_id"], {"moisture_entity": MOISTURE}
+    )
+    await hass.async_block_till_done()
+
+    assert entity_registry.async_get("sensor.backyard_central_battery") is None
+    assert entity_registry.async_get("sensor.backyard_central_raw_ad") is None
+    assert entity_registry.async_get(OUTPUT) is not None
+
+
+async def test_no_update_timeout_makes_sensors_unavailable(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    hass.states.async_set(RAW, "285")
+    hass.states.async_set(BATTERY, "100")
+    await _setup(hass, model="wh51", raw_ad_entity=RAW, battery_entity=BATTERY, ad0=70, ad100=500)
+    timeout = "number.backyard_central_unavailable_after_no_update"
+    assert float(hass.states.get(timeout).state) == 0  # type: ignore[union-attr]
+    assert hass.states.get(timeout).attributes["unit_of_measurement"] == "min"  # type: ignore[union-attr]
+
+    # Off by default: an hour without updates changes nothing.
+    freezer.tick(timedelta(hours=1))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert float(hass.states.get(OUTPUT).state) == 50.0  # type: ignore[union-attr]
+
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": timeout, "value": 10}, blocking=True
+    )
+    # The sources last reported an hour ago, so the new timeout applies at once.
+    for entity_id in (OUTPUT, "sensor.backyard_central_raw_ad", "sensor.backyard_central_battery"):
+        assert hass.states.get(entity_id).state == STATE_UNAVAILABLE  # type: ignore[union-attr]
+
+    hass.states.async_set(RAW, "285")
+    await hass.async_block_till_done()
+    assert float(hass.states.get(OUTPUT).state) == 50.0  # type: ignore[union-attr]
+
+    freezer.tick(timedelta(minutes=9))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert float(hass.states.get(OUTPUT).state) == 50.0  # type: ignore[union-attr]
+
+    freezer.tick(timedelta(minutes=2))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert hass.states.get(OUTPUT).state == STATE_UNAVAILABLE  # type: ignore[union-attr]
+
+
+async def test_a_repeated_value_counts_as_an_update(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory
+) -> None:
+    hass.states.async_set(RAW, "285")
+    await _setup(hass, model="wh51", raw_ad_entity=RAW, ad0=70, ad100=500, stale_minutes=10)
+
+    freezer.tick(timedelta(minutes=8))
+    hass.states.async_set(RAW, "285")  # same value: reported, not changed
+    freezer.tick(timedelta(minutes=8))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert float(hass.states.get(OUTPUT).state) == 50.0  # type: ignore[union-attr]

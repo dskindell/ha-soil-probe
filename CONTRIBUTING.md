@@ -31,8 +31,8 @@ uvx pre-commit install
 - `calibration.py`: the two-point formula shared by raw AD and moisture % sources, and solving a
   point from a capture.
 - `button.py`: capture dry, capture wet and reset calibration.
-- `number.py`: the calibration points and capture targets on the device page.
-- `sensor.py`: the calibrated moisture sensor.
+- `number.py`: the calibration points, capture targets and no-update timeout on the device page.
+- `sensor.py`: the calibrated moisture sensor, and copies of the raw AD and battery readings.
 - `translations/en.json`: edited by hand.
 
 Tests are in `tests/`, one module per source module.

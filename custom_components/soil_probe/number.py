@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, EntityCategory
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -18,20 +17,22 @@ from .const import (
     CONF_PCT0,
     CONF_PCT100,
     CONF_RAW_SOURCE,
+    CONF_STALE_MINUTES,
     CONF_WET_TARGET,
     DEFAULT_DRY_TARGET,
     DEFAULT_WET_TARGET,
-    DOMAIN,
     calibration_signal,
 )
-from .device import probe_device_info
+from .device import probe_device_info, remove_unused_entities
 
 # Targets of exactly 100 % dry or 0 % wet can't be solved for.
 _TARGETS = {
     CONF_DRY_TARGET: (0, 90, DEFAULT_DRY_TARGET),
     CONF_WET_TARGET: (10, 100, DEFAULT_WET_TARGET),
 }
-_ALL_KEYS = {CONF_AD0, CONF_AD100, CONF_PCT0, CONF_PCT100, *_TARGETS}
+# 0 turns the timeout off; a day is far beyond any probe's reporting interval.
+_STALE_LIMITS = (0, 1440, 0)
+_ALL_KEYS = {CONF_AD0, CONF_AD100, CONF_PCT0, CONF_PCT100, CONF_STALE_MINUTES, *_TARGETS}
 
 
 async def async_setup_entry(
@@ -46,19 +47,12 @@ async def async_setup_entry(
     ]
     if raw:
         entities += [
-            TargetNumber(entry, key, minimum, maximum, default)
+            DefaultedNumber(entry, key, minimum, maximum, default, PERCENTAGE)
             for key, (minimum, maximum, default) in _TARGETS.items()
         ]
-    _remove_unused_numbers(hass, entry, {entity.key for entity in entities})
+    entities.append(DefaultedNumber(entry, CONF_STALE_MINUTES, *_STALE_LIMITS, UnitOfTime.MINUTES))
+    remove_unused_entities(hass, entry, "number", _ALL_KEYS - {entity.key for entity in entities})
     async_add_entities(entities)
-
-
-def _remove_unused_numbers(hass: HomeAssistant, entry: ConfigEntry, keep: set[str]) -> None:
-    """Drop the numbers left from the other source type after the source was swapped."""
-    registry = er.async_get(hass)
-    for key in _ALL_KEYS - keep:
-        if entity_id := registry.async_get_entity_id("number", DOMAIN, f"{entry.entry_id}_{key}"):
-            registry.async_remove(entity_id)
 
 
 class _OptionNumber(NumberEntity):
@@ -114,13 +108,19 @@ class PointNumber(_OptionNumber):
         check_points(options)
 
 
-class TargetNumber(_OptionNumber):
-    """The moisture % a capture solves for."""
+class DefaultedNumber(_OptionNumber):
+    """A setting that has a default until it is first changed: a capture target or the timeout."""
 
     def __init__(
-        self, entry: ConfigEntry, key: str, minimum: float, maximum: float, default: int
+        self,
+        entry: ConfigEntry,
+        key: str,
+        minimum: float,
+        maximum: float,
+        default: int,
+        unit: str,
     ) -> None:
-        super().__init__(entry, key, minimum, maximum, PERCENTAGE)
+        super().__init__(entry, key, minimum, maximum, unit)
         self._default = default
 
     @property

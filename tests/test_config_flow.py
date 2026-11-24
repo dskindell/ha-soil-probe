@@ -141,6 +141,7 @@ async def test_options_swap_sources_and_keep_calibration(hass: HomeAssistant) ->
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
     assert entry.options == {
         "model": "wh51",
         "raw_ad_entity": "sensor.new_probe_ad",
@@ -172,6 +173,7 @@ async def test_options_switch_to_raw_on_a_preset_model_uses_the_preset(
     )
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
     assert entry.options == {"model": "wh51", "raw_ad_entity": RAW, "ad0": 70, "ad100": 500}
 
 
@@ -196,4 +198,5 @@ async def test_options_switch_to_raw_on_generic_asks_for_calibration(
         result["flow_id"], {"ad0": 300, "ad100": 3000}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
     assert entry.options == {"model": "generic", "raw_ad_entity": RAW, "ad0": 300, "ad100": 3000}

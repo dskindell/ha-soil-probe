@@ -16,6 +16,7 @@ CONF_PCT0: Final = "pct0"
 CONF_PCT100: Final = "pct100"
 CONF_DRY_TARGET: Final = "dry_target"
 CONF_WET_TARGET: Final = "wet_target"
+CONF_STALE_MINUTES: Final = "stale_minutes"
 
 # Ecowitt's own calibration procedure aims for these readings in air and in water.
 DEFAULT_DRY_TARGET: Final = 10
@@ -25,5 +26,5 @@ SOURCE_KEYS: Final = (CONF_RAW_SOURCE, CONF_MOISTURE_SOURCE, CONF_BATTERY_SOURCE
 
 
 def calibration_signal(entry_id: str) -> str:
-    """Dispatcher signal sent when a probe's calibration changes."""
+    """Dispatcher signal sent when a probe's calibration or other settings change."""
     return f"{DOMAIN}_{entry_id}_calibration"

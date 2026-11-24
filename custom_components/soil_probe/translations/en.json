@@ -82,6 +82,9 @@
       },
       "wet_target": {
         "name": "Wet capture target"
+      },
+      "stale_minutes": {
+        "name": "Unavailable after no update"
       }
     },
     "button": {
@@ -93,6 +96,11 @@
       },
       "reset_calibration": {
         "name": "Reset calibration"
+      }
+    },
+    "sensor": {
+      "raw_ad": {
+        "name": "Raw AD"
       }
     }
   },
