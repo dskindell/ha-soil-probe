@@ -3,13 +3,64 @@
     "step": {
       "user": {
         "title": "Add a soil probe",
+        "description": "Pick the probe's raw AD sensor if it has one, otherwise its moisture % sensor. Only raw AD can be calibrated dry and wet.",
         "data": {
-          "name": "Name"
+          "name": "Name",
+          "model": "Model",
+          "raw_ad_entity": "Raw AD sensor",
+          "moisture_entity": "Moisture % sensor",
+          "battery_entity": "Battery sensor"
         },
         "data_description": {
-          "name": "The probe's device name, for example its location."
+          "name": "The probe's device name, for example its location.",
+          "model": "Sets the default calibration. Pick Generic if your probe isn't listed.",
+          "raw_ad_entity": "The probe's raw reading. Use this when the probe has one.",
+          "moisture_entity": "Only for a probe without a raw AD sensor.",
+          "battery_entity": "Optional."
+        }
+      },
+      "calibration": {
+        "title": "Calibration",
+        "description": "Generic probes have no default calibration. Enter the probe's raw AD reading at 0 % and at 100 % moisture. You can change both later on the device page.",
+        "data": {
+          "ad0": "Raw AD at 0 %",
+          "ad100": "Raw AD at 100 %"
         }
       }
+    },
+    "error": {
+      "one_source": "Pick either a raw AD sensor or a moisture % sensor, not both.",
+      "span_too_small": "Must be at least 10 above the 0 % reading."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sources",
+        "description": "Pick the probe's raw AD sensor if it has one, otherwise its moisture % sensor. Only raw AD can be calibrated dry and wet.",
+        "data": {
+          "raw_ad_entity": "Raw AD sensor",
+          "moisture_entity": "Moisture % sensor",
+          "battery_entity": "Battery sensor"
+        },
+        "data_description": {
+          "raw_ad_entity": "The probe's raw reading. Use this when the probe has one.",
+          "moisture_entity": "Only for a probe without a raw AD sensor.",
+          "battery_entity": "Optional."
+        }
+      },
+      "calibration": {
+        "title": "Calibration",
+        "description": "Generic probes have no default calibration. Enter the probe's raw AD reading at 0 % and at 100 % moisture. You can change both later on the device page.",
+        "data": {
+          "ad0": "Raw AD at 0 %",
+          "ad100": "Raw AD at 100 %"
+        }
+      }
+    },
+    "error": {
+      "one_source": "Pick either a raw AD sensor or a moisture % sensor, not both.",
+      "span_too_small": "Must be at least 10 above the 0 % reading."
     }
   }
 }

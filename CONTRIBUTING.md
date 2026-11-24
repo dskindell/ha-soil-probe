@@ -23,7 +23,9 @@ uvx pre-commit install
 `custom_components/soil_probe/`:
 
 - `const.py`: keys and constants.
-- `config_flow.py`: adding a probe. Schemas use `probatio`, Home Assistant's validation library since
+- `models.py`: the probe models and their default calibration. To add a model, add one entry to
+  `MODELS` and a case to `tests/test_models.py`; the setup form's model picker is built from it.
+- `config_flow.py`: adding a probe, and changing its sources under Configure. Schemas use `probatio`, Home Assistant's validation library since
   2026.11; don't import `voluptuous`.
 - `translations/en.json`: edited by hand.
 
