@@ -50,13 +50,13 @@ async def _set(hass: HomeAssistant, entity_id: str, value: float) -> None:
     )
 
 
-async def test_off_threshold_leaves_the_sensor_unavailable(hass: HomeAssistant) -> None:
+async def test_off_threshold_keeps_the_sensor_off(hass: HomeAssistant) -> None:
     hass.states.async_set(MOISTURE, "5")
     await _setup(hass)
 
     assert float(_state(hass, THRESHOLD)) == 0
     assert float(_state(hass, MARGIN)) == 2
-    assert _state(hass) == STATE_UNAVAILABLE
+    assert _state(hass) == STATE_OFF
     state = hass.states.get(NEEDS_WATER)
     assert state is not None
     assert state.attributes["device_class"] == "problem"
@@ -101,14 +101,20 @@ async def test_changing_threshold_or_margin_applies_at_once(hass: HomeAssistant)
     await _reading(hass, "30")
     assert _state(hass) == STATE_OFF
 
-    await _set(hass, THRESHOLD, 0)
-    assert _state(hass) == STATE_UNAVAILABLE
-
-
-async def test_unavailable_moisture_makes_it_unavailable(hass: HomeAssistant) -> None:
-    hass.states.async_set(MOISTURE, "20")
-    await _setup(hass, low_threshold=30)
+    await _set(hass, THRESHOLD, 30)
+    await _reading(hass, "20")
     assert _state(hass) == STATE_ON
+    await _set(hass, THRESHOLD, 0)
+    assert _state(hass) == STATE_OFF
+
+
+@pytest.mark.parametrize("threshold", [30, 0])
+async def test_unavailable_moisture_makes_it_unavailable(
+    hass: HomeAssistant, threshold: int
+) -> None:
+    hass.states.async_set(MOISTURE, "20")
+    await _setup(hass, low_threshold=threshold)
+    assert _state(hass) == (STATE_ON if threshold else STATE_OFF)
 
     await _reading(hass, STATE_UNAVAILABLE)
     assert _state(hass) == STATE_UNAVAILABLE
