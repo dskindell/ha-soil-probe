@@ -31,9 +31,13 @@ uvx pre-commit install
 - `calibration.py`: the two-point formula shared by raw AD and moisture % sources, and solving a
   point from a capture.
 - `button.py`: capture dry, capture wet and reset calibration.
-- `number.py`: the calibration points, capture targets and no-update timeout on the device page.
+- `number.py`: the device page's settings: calibration points, capture targets, no-update timeout
+  and low moisture threshold and margin.
 - `sources.py`: the rules for a probe's sensors, shared by Configure and the `set_sources` action.
 - `services.py`, `services.yaml`: the `set_sources` action.
+- `source_entity.py`: the base for entities that follow a source: state tracking and the no-update
+  timeout.
+- `binary_sensor.py`: Needs water.
 - `sensor.py`: the calibrated moisture sensor, and copies of the raw AD and battery readings.
 - `translations/en.json`: edited by hand.
 

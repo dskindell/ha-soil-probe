@@ -85,6 +85,12 @@
       },
       "stale_minutes": {
         "name": "Unavailable after no update"
+      },
+      "low_threshold": {
+        "name": "Low moisture threshold"
+      },
+      "threshold_margin": {
+        "name": "Low moisture margin"
       }
     },
     "button": {
@@ -101,6 +107,11 @@
     "sensor": {
       "raw_ad": {
         "name": "Raw AD"
+      }
+    },
+    "binary_sensor": {
+      "needs_water": {
+        "name": "Needs water"
       }
     }
   },

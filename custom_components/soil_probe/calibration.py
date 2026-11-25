@@ -13,6 +13,7 @@ from .const import (
     CONF_AD0,
     CONF_AD100,
     CONF_MODEL,
+    CONF_MOISTURE_SOURCE,
     CONF_PCT0,
     CONF_PCT100,
     CONF_RAW_SOURCE,
@@ -44,6 +45,17 @@ def reading_of(state: State | None) -> float | None:
         return float(state.state)
     except ValueError:
         return None
+
+
+def moisture_source(options: Mapping[str, Any]) -> str:
+    """The entity the moisture is calculated from."""
+    return str(options.get(CONF_RAW_SOURCE) or options[CONF_MOISTURE_SOURCE])
+
+
+def moisture_of(options: Mapping[str, Any], reading: float) -> float:
+    """Moisture % from a source reading with the probe's current calibration."""
+    low, high = calibration_keys(options)
+    return calibrated_moisture(reading, options[low], options[high])
 
 
 def calibrated_moisture(reading: float, at0: float, at100: float) -> float:
