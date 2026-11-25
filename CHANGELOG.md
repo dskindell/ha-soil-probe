@@ -2,6 +2,12 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); betas are published as GitHub pre-releases, which HACS offers only to those who turn on the repository's pre-release switch.
 
+## [0.1.0-beta.4] - 2026-11-24
+
+### Fixed
+
+- `Needs water` is off (no problem) while `Low moisture threshold` is 0, instead of unavailable. It is still unavailable whenever moisture is unavailable.
+
 ## [0.1.0-beta.3] - 2026-11-24
 
 ### Added
