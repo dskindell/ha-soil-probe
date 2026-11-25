@@ -19,6 +19,7 @@ CONF_WET_TARGET: Final = "wet_target"
 CONF_STALE_MINUTES: Final = "stale_minutes"
 CONF_LOW_THRESHOLD: Final = "low_threshold"
 CONF_THRESHOLD_MARGIN: Final = "threshold_margin"
+CONF_LABEL: Final = "label"
 
 # 0 turns the low-moisture threshold off.
 DEFAULT_LOW_THRESHOLD: Final = 0

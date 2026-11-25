@@ -67,6 +67,34 @@ async def test_moisture_source_needs_no_calibration(hass: HomeAssistant) -> None
 
 
 @pytest.mark.parametrize(
+    ("typed", "stored"), [("  Tomato bed ", {"label": "Tomato bed"}), ("  ", {})]
+)
+async def test_label_is_optional_and_trimmed(
+    hass: HomeAssistant, typed: str, stored: dict[str, str]
+) -> None:
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {"name": "Planter", "label": typed, "model": "generic", "moisture_entity": MOISTURE},
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    expected = {"model": "generic", "moisture_entity": MOISTURE, "pct0": 0, "pct100": 100}
+    assert result["options"] == expected | stored
+
+
+async def test_label_longer_than_a_state_is_refused(hass: HomeAssistant) -> None:
+    result = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {"name": "Planter", "label": "x" * 256, "model": "generic", "moisture_entity": MOISTURE},
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"label": "label_too_long"}
+
+
+@pytest.mark.parametrize(
     "sources",
     [{}, {"raw_ad_entity": RAW, "moisture_entity": MOISTURE}],
     ids=["neither", "both"],
@@ -130,7 +158,15 @@ def _entry(hass: HomeAssistant, **options: Any) -> MockConfigEntry:
 
 
 async def test_options_swap_sources_and_keep_calibration(hass: HomeAssistant) -> None:
-    entry = _entry(hass, model="wh51", raw_ad_entity=RAW, battery_entity=BATTERY, ad0=80, ad100=450)
+    entry = _entry(
+        hass,
+        model="wh51",
+        raw_ad_entity=RAW,
+        battery_entity=BATTERY,
+        ad0=80,
+        ad100=450,
+        label="Tomato bed",
+    )
 
     result = await hass.config_entries.options.async_init(entry.entry_id)
     assert result["type"] is FlowResultType.FORM
@@ -147,6 +183,7 @@ async def test_options_swap_sources_and_keep_calibration(hass: HomeAssistant) ->
         "raw_ad_entity": "sensor.new_probe_ad",
         "ad0": 80,
         "ad100": 450,
+        "label": "Tomato bed",
     }
 
 
