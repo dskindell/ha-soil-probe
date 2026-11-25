@@ -113,6 +113,51 @@
     },
     "point_out_of_range": {
       "message": "The calibration point would be {value}, outside {min}–{max}."
+    },
+    "one_source": {
+      "message": "Give either a raw AD sensor or a moisture % sensor, not both."
+    },
+    "ad_needs_raw": {
+      "message": "Raw AD at 0 % and at 100 % only apply with a raw AD sensor."
+    },
+    "calibration_needed": {
+      "message": "{probe} is a Generic probe with no default calibration: give its raw AD at 0 % and at 100 %."
+    }
+  },
+  "services": {
+    "set_sources": {
+      "name": "Set sources",
+      "description": "Sets a probe's sensors, for example after replacing the probe. The sensors given become the probe's sensors: a battery sensor left out is removed.",
+      "fields": {
+        "device_id": {
+          "name": "Probe",
+          "description": "The probe's device. With several, each gets the same sensors."
+        },
+        "raw_ad_entity": {
+          "name": "Raw AD sensor",
+          "description": "The probe's raw reading. Give this or a moisture % sensor."
+        },
+        "moisture_entity": {
+          "name": "Moisture % sensor",
+          "description": "Only for a probe without a raw AD sensor."
+        },
+        "battery_entity": {
+          "name": "Battery sensor",
+          "description": "Optional. Left out, the probe has no battery sensor."
+        },
+        "reset_calibration": {
+          "name": "Reset calibration",
+          "description": "Go back to the model's default calibration, for a new probe. Off keeps the current calibration."
+        },
+        "ad0": {
+          "name": "Raw AD at 0 %",
+          "description": "Sets this calibration point. Needed with a raw AD sensor on a Generic probe that has none yet or is reset."
+        },
+        "ad100": {
+          "name": "Raw AD at 100 %",
+          "description": "Sets this calibration point. Needed with a raw AD sensor on a Generic probe that has none yet or is reset."
+        }
+      }
     }
   }
 }
