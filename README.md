@@ -7,7 +7,7 @@ For soil probes such as the Ecowitt WH51 and WH51L when you use rtl_433 instead 
 gateway. Home Assistant then gets separate moisture, raw AD and battery entities, with no device and
 no calibration. Soil Probe turns those into one device per probe with a calibrated moisture sensor.
 
-**Status:** beta. The first release is `0.1.0-beta.1`.
+**Status:** beta; no stable release yet. See the [releases](https://github.com/dskindell/ha-soil-probe/releases).
 
 Requires Home Assistant 2026.11 or newer.
 
