@@ -35,12 +35,15 @@ class NeedsWaterSensor(SourceEntity, BinarySensorEntity):
 
     def _apply(self, reading: float | None) -> None:
         options = self._entry.options
-        threshold = options.get(CONF_LOW_THRESHOLD, DEFAULT_LOW_THRESHOLD)
-        if reading is None or threshold == 0:
+        if reading is None:
             self._attr_available = False
             self._attr_is_on = None
             return
         self._attr_available = True
+        threshold = options.get(CONF_LOW_THRESHOLD, DEFAULT_LOW_THRESHOLD)
+        if threshold == 0:
+            self._attr_is_on = False
+            return
         moisture = moisture_of(options, reading)
         if moisture < threshold:
             self._attr_is_on = True

@@ -53,7 +53,7 @@ Each probe is one device, which you can rename and give an area like any other.
 | Reset calibration | raw AD source, not Generic | Back to the model's default calibration. |
 | Unavailable after no update | always | Minutes without a report before the sensors go unavailable; 0 turns it off. |
 | Needs water | always | On when moisture is below the low moisture threshold; see below. |
-| Low moisture threshold | always | Moisture % below which Needs water turns on; 0 (the default) turns it off. |
+| Low moisture threshold | always | Moisture % below which Needs water turns on; 0 (the default) keeps it off. |
 | Low moisture margin | always | How far above the threshold moisture must rise before Needs water turns off; 2 % by default. |
 
 Moisture is `(reading − point at 0 %) × 100 / (point at 100 % − point at 0 %)`, kept between 0 and
@@ -74,8 +74,8 @@ alert or to start irrigation from an automation. Needs water then:
 - after a restart or reload, starts on if moisture is below the threshold, otherwise off.
 
 For example, with a threshold of 25 and a margin of 2, it's on below 25 % and off at 27 % or more.
-It shows Problem when on and OK when off. It's unavailable while the threshold is 0 and whenever
-Moisture is unavailable. A change to the threshold, the margin or the calibration applies at once.
+It shows Problem when on and OK when off. While the threshold is 0 it stays off. It's unavailable
+whenever Moisture is unavailable. A change to the threshold, the margin or the calibration applies at once.
 
 ## Calibrate
 
