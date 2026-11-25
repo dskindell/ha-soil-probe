@@ -22,13 +22,11 @@ from .const import (
     CONF_BATTERY_SOURCE,
     CONF_MODEL,
     CONF_MOISTURE_SOURCE,
-    CONF_PCT0,
-    CONF_PCT100,
     CONF_RAW_SOURCE,
     DOMAIN,
-    SOURCE_KEYS,
 )
 from .models import MIN_SPAN, MODELS
+from .sources import has_one_source, needs_calibration, with_defaults, with_sources
 
 _SENSOR = selector.EntitySelector(selector.EntitySelectorConfig(domain="sensor"))
 
@@ -57,10 +55,7 @@ USER_SCHEMA = probatio.Schema(
 
 
 def _source_errors(user_input: dict[str, Any]) -> dict[str, str]:
-    """Exactly one of raw AD and moisture % must be given."""
-    if (CONF_RAW_SOURCE in user_input) == (CONF_MOISTURE_SOURCE in user_input):
-        return {"base": "one_source"}
-    return {}
+    return {} if has_one_source(user_input) else {"base": "one_source"}
 
 
 def _calibration_schema(model_key: str) -> probatio.Schema:
@@ -94,27 +89,6 @@ def _calibration(user_input: dict[str, Any]) -> dict[str, int]:
     return {CONF_AD0: int(user_input[CONF_AD0]), CONF_AD100: int(user_input[CONF_AD100])}
 
 
-def _with_sources(options: dict[str, Any], user_input: dict[str, Any]) -> dict[str, Any]:
-    """Replace the sources in options with those in user_input; a missing one is removed."""
-    kept = {key: value for key, value in options.items() if key not in SOURCE_KEYS}
-    return kept | {key: user_input[key] for key in SOURCE_KEYS if key in user_input}
-
-
-def _needs_calibration(options: dict[str, Any]) -> bool:
-    return CONF_RAW_SOURCE in options and CONF_AD0 not in options
-
-
-def _with_preset(options: dict[str, Any]) -> dict[str, Any]:
-    """Add the default calibration for the chosen source when it has none yet."""
-    if CONF_MOISTURE_SOURCE in options and CONF_PCT0 not in options:
-        # 0 and 100 leave the source's percentage unchanged.
-        return options | {CONF_PCT0: 0, CONF_PCT100: 100}
-    model = MODELS[options[CONF_MODEL]]
-    if not _needs_calibration(options) or model.ad0 is None or model.ad100 is None:
-        return options
-    return options | {CONF_AD0: model.ad0, CONF_AD100: model.ad100}
-
-
 class SoilProbeConfigFlow(ConfigFlow, domain=DOMAIN):
     """Add a probe."""
 
@@ -135,10 +109,10 @@ class SoilProbeConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None and not (errors := _source_errors(user_input)):
             self._title = user_input[CONF_NAME]
-            self._options = _with_preset(
-                _with_sources({CONF_MODEL: user_input[CONF_MODEL]}, user_input)
+            self._options = with_defaults(
+                with_sources({CONF_MODEL: user_input[CONF_MODEL]}, user_input)
             )
-            if _needs_calibration(self._options):
+            if needs_calibration(self._options):
                 return await self.async_step_calibration()
             return self._create()
         return self.async_show_form(
@@ -177,8 +151,8 @@ class SoilProbeOptionsFlow(OptionsFlowWithReload):
         """Pick the sources."""
         errors: dict[str, str] = {}
         if user_input is not None and not (errors := _source_errors(user_input)):
-            self._options = _with_preset(_with_sources(dict(self.config_entry.options), user_input))
-            if _needs_calibration(self._options):
+            self._options = with_defaults(with_sources(dict(self.config_entry.options), user_input))
+            if needs_calibration(self._options):
                 return await self.async_step_calibration()
             return self.async_create_entry(data=self._options)
         return self.async_show_form(

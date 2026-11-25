@@ -1,0 +1,36 @@
+set_sources:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: soil_probe
+          multiple: true
+    raw_ad_entity:
+      selector:
+        entity:
+          domain: sensor
+    moisture_entity:
+      selector:
+        entity:
+          domain: sensor
+    battery_entity:
+      selector:
+        entity:
+          domain: sensor
+    reset_calibration:
+      default: false
+      selector:
+        boolean:
+    ad0:
+      selector:
+        number:
+          min: 0
+          max: 65535
+          mode: box
+    ad100:
+      selector:
+        number:
+          min: 0
+          max: 65535
+          mode: box

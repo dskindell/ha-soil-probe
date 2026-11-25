@@ -32,6 +32,8 @@ uvx pre-commit install
   point from a capture.
 - `button.py`: capture dry, capture wet and reset calibration.
 - `number.py`: the calibration points, capture targets and no-update timeout on the device page.
+- `sources.py`: the rules for a probe's sensors, shared by Configure and the `set_sources` action.
+- `services.py`, `services.yaml`: the `set_sources` action.
 - `sensor.py`: the calibrated moisture sensor, and copies of the raw AD and battery readings.
 - `translations/en.json`: edited by hand.
 
