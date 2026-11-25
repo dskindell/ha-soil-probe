@@ -11,7 +11,7 @@ from homeassistant.config_entries import (
     OptionsFlow,
     OptionsFlowWithReload,
 )
-from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_NAME, MAX_LENGTH_STATE_STATE
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 import probatio
@@ -20,6 +20,7 @@ from .const import (
     CONF_AD0,
     CONF_AD100,
     CONF_BATTERY_SOURCE,
+    CONF_LABEL,
     CONF_MODEL,
     CONF_MOISTURE_SOURCE,
     CONF_RAW_SOURCE,
@@ -41,6 +42,7 @@ SOURCES_SCHEMA = probatio.Schema(
 USER_SCHEMA = probatio.Schema(
     {
         probatio.Required(CONF_NAME): selector.TextSelector(),
+        probatio.Optional(CONF_LABEL): selector.TextSelector(),
         probatio.Required(CONF_MODEL): selector.SelectSelector(
             selector.SelectSelectorConfig(
                 options=[
@@ -56,6 +58,18 @@ USER_SCHEMA = probatio.Schema(
 
 def _source_errors(user_input: dict[str, Any]) -> dict[str, str]:
     return {} if has_one_source(user_input) else {"base": "one_source"}
+
+
+def _user_errors(user_input: dict[str, Any]) -> dict[str, str]:
+    if len(user_input.get(CONF_LABEL, "").strip()) > MAX_LENGTH_STATE_STATE:
+        return {CONF_LABEL: "label_too_long"}
+    return _source_errors(user_input)
+
+
+def _label(user_input: dict[str, Any]) -> dict[str, str]:
+    """The label to store; none means the label follows the device name."""
+    label = user_input.get(CONF_LABEL, "").strip()
+    return {CONF_LABEL: label} if label else {}
 
 
 def _calibration_schema(model_key: str) -> probatio.Schema:
@@ -107,10 +121,10 @@ class SoilProbeConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Name the probe and pick its model and sources."""
         errors: dict[str, str] = {}
-        if user_input is not None and not (errors := _source_errors(user_input)):
+        if user_input is not None and not (errors := _user_errors(user_input)):
             self._title = user_input[CONF_NAME]
             self._options = with_defaults(
-                with_sources({CONF_MODEL: user_input[CONF_MODEL]}, user_input)
+                with_sources({CONF_MODEL: user_input[CONF_MODEL], **_label(user_input)}, user_input)
             )
             if needs_calibration(self._options):
                 return await self.async_step_calibration()

@@ -39,6 +39,7 @@ uvx pre-commit install
   timeout.
 - `binary_sensor.py`: Needs water.
 - `sensor.py`: the calibrated moisture sensor, and copies of the raw AD and battery readings.
+- `text.py`: the Label, which shows the device name until one is set.
 - `translations/en.json`: edited by hand.
 
 Tests are in `tests/`, one module per source module.

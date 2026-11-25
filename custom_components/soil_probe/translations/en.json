@@ -6,13 +6,15 @@
         "description": "Pick the probe's raw AD sensor if it has one, otherwise its moisture % sensor. Only raw AD can be calibrated dry and wet.",
         "data": {
           "name": "Name",
+          "label": "Label",
           "model": "Model",
           "raw_ad_entity": "Raw AD sensor",
           "moisture_entity": "Moisture % sensor",
           "battery_entity": "Battery sensor"
         },
         "data_description": {
-          "name": "The probe's device name, for example its location.",
+          "name": "The probe's device name. Renaming the device later changes its entities' names.",
+          "label": "Optional, for example the probe's location. You can change it on the device page without renaming anything. Left empty, it shows the device name.",
           "model": "Sets the default calibration. Pick Generic if your probe isn't listed.",
           "raw_ad_entity": "The probe's raw reading. Use this when the probe has one.",
           "moisture_entity": "Only for a probe without a raw AD sensor. Its percentage can be corrected on the device page.",
@@ -30,7 +32,8 @@
     },
     "error": {
       "one_source": "Pick either a raw AD sensor or a moisture % sensor, not both.",
-      "span_too_small": "Must be at least 10 above the 0 % reading."
+      "span_too_small": "Must be at least 10 above the 0 % reading.",
+      "label_too_long": "Must be 255 characters or fewer."
     }
   },
   "options": {
@@ -112,6 +115,11 @@
     "binary_sensor": {
       "needs_water": {
         "name": "Needs water"
+      }
+    },
+    "text": {
+      "label": {
+        "name": "Label"
       }
     }
   },

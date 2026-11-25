@@ -20,7 +20,8 @@ of type Integration, then download Soil Probe. Restart Home Assistant.
 
 Settings → Devices & services → Add integration → Soil Probe. Add one entry per probe:
 
-- **Name:** the device name, for example the probe's location.
+- **Name:** the device name. Renaming the device later changes its entities' names.
+- **Label:** optional, for example the probe's location; see [Label](#label).
 - **Model:** Ecowitt WH51, Ecowitt WH51L or Generic. The model sets the default calibration and the
   device's manufacturer and model. It can't be changed later; to change it, delete the probe and add
   it again.
@@ -52,6 +53,7 @@ Each probe is one device, which you can rename and give an area like any other.
 | Capture dry, Capture wet | raw AD source | Calibrate from the current reading. |
 | Reset calibration | raw AD source, not Generic | Back to the model's default calibration. |
 | Unavailable after no update | always | Minutes without a report before the sensors go unavailable; 0 turns it off. |
+| Label | always | A name for the probe, for example where it is; see below. |
 | Needs water | always | On when moisture is below the low moisture threshold; see below. |
 | Low moisture threshold | always | Moisture % below which Needs water turns on; 0 (the default) keeps it off. |
 | Low moisture margin | always | How far above the threshold moisture must rise before Needs water turns off; 2 % by default. |
@@ -76,6 +78,13 @@ alert or to start irrigation from an automation. Needs water then:
 For example, with a threshold of 25 and a margin of 2, it's on below 25 % and off at 27 % or more.
 It shows Problem when on and OK when off. While the threshold is 0 it stays off. It's unavailable
 whenever Moisture is unavailable. A change to the threshold, the margin or the calibration applies at once.
+
+## Label
+
+Label is a name you can change, for example when you move the probe, without renaming the device
+or its entities. Set it when you add the probe or later on the device page; an automation can set
+it with `text.set_value`. Until you set one, it shows the device's current name, and it follows the
+device when you rename it. Clear it to go back to the device name. It's at most 255 characters.
 
 ## Calibrate
 
