@@ -2,6 +2,13 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); betas are published as GitHub pre-releases, which HACS offers only to those who turn on the repository's pre-release switch.
 
+## [0.1.0-beta.2] - 2026-11-24
+
+### Added
+
+- A `soil_probe.set_sources` action that sets a probe's sensors in one call, for example the new raw AD and battery sensors after replacing a probe. `reset_calibration` returns to the model's defaults; `ad0` and `ad100` set the calibration points.
+- Usage documentation in the README.
+
 ## [0.1.0-beta.1] - 2026-11-24
 
 First release.
