@@ -17,6 +17,12 @@ CONF_PCT100: Final = "pct100"
 CONF_DRY_TARGET: Final = "dry_target"
 CONF_WET_TARGET: Final = "wet_target"
 CONF_STALE_MINUTES: Final = "stale_minutes"
+CONF_LOW_THRESHOLD: Final = "low_threshold"
+CONF_THRESHOLD_MARGIN: Final = "threshold_margin"
+
+# 0 turns the low-moisture threshold off.
+DEFAULT_LOW_THRESHOLD: Final = 0
+DEFAULT_THRESHOLD_MARGIN: Final = 2
 
 # Ecowitt's own calibration procedure aims for these readings in air and in water.
 DEFAULT_DRY_TARGET: Final = 10

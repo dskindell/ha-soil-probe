@@ -52,12 +52,30 @@ Each probe is one device, which you can rename and give an area like any other.
 | Capture dry, Capture wet | raw AD source | Calibrate from the current reading. |
 | Reset calibration | raw AD source, not Generic | Back to the model's default calibration. |
 | Unavailable after no update | always | Minutes without a report before the sensors go unavailable; 0 turns it off. |
+| Needs water | always | On when moisture is below the low moisture threshold; see below. |
+| Low moisture threshold | always | Moisture % below which Needs water turns on; 0 (the default) turns it off. |
+| Low moisture margin | always | How far above the threshold moisture must rise before Needs water turns off; 2 % by default. |
 
 Moisture is `(reading − point at 0 %) × 100 / (point at 100 % − point at 0 %)`, kept between 0 and
 100 %. The WH51 and WH51L defaults are 70 and 500, from Ecowitt's manuals.
 
 When a source sensor is unavailable, unknown or not a number, the entities copied from it are
 unavailable too. They come back with its next reading.
+
+## Needs water
+
+Set **Low moisture threshold** on the probe's device page to use it, for example for a watering
+alert or to start irrigation from an automation. Needs water then:
+
+- turns on when moisture drops below the threshold;
+- turns off once moisture is at the threshold plus **Low moisture margin** or above, so a reading
+  that wobbles around the threshold doesn't turn it on and off;
+- keeps its state while moisture is in between;
+- after a restart or reload, starts on if moisture is below the threshold, otherwise off.
+
+For example, with a threshold of 25 and a margin of 2, it's on below 25 % and off at 27 % or more.
+It shows Problem when on and OK when off. It's unavailable while the threshold is 0 and whenever
+Moisture is unavailable. A change to the threshold, the margin or the calibration applies at once.
 
 ## Calibrate
 

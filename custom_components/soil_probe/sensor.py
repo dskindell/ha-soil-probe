@@ -2,37 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, EntityCategory
-from homeassistant.core import (
-    Event,
-    EventStateChangedData,
-    EventStateReportedData,
-    HomeAssistant,
-    State,
-    callback,
-)
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.event import (
-    async_track_state_change_event,
-    async_track_state_report_event,
-    async_track_time_interval,
-)
-from homeassistant.util import dt as dt_util
 
-from .calibration import calibrated_moisture, calibration_keys, reading_of
-from .const import (
-    CONF_BATTERY_SOURCE,
-    CONF_MOISTURE_SOURCE,
-    CONF_RAW_SOURCE,
-    CONF_STALE_MINUTES,
-    calibration_signal,
-)
-from .device import probe_device_info, remove_unused_entities
+from .calibration import moisture_of, moisture_source
+from .const import CONF_BATTERY_SOURCE, CONF_RAW_SOURCE
+from .device import remove_unused_entities
+from .source_entity import SourceEntity
 
 
 async def async_setup_entry(
@@ -53,73 +32,14 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-_STALE_CHECK = timedelta(seconds=30)
+class _SourceSensor(SourceEntity, SensorEntity):
+    """A sensor whose value is computed from the source reading."""
 
-
-class _SourceSensor(SensorEntity):
-    """A sensor computed from one source entity's state."""
-
-    _attr_has_entity_name = True
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_should_poll = False
 
-    def __init__(self, entry: ConfigEntry, key: str, source: str) -> None:
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_{key}"
-        self._attr_device_info = probe_device_info(entry)
-        self._source = source
-
-    async def async_added_to_hass(self) -> None:
-        self.async_on_remove(
-            async_track_state_change_event(self.hass, self._source, self._source_changed)
-        )
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, calibration_signal(self._entry.entry_id), self._refresh
-            )
-        )
-        # A repeated value is reported, not changed; it still counts against the timeout.
-        self.async_on_remove(
-            async_track_state_report_event(self.hass, self._source, self._source_reported)
-        )
-        self.async_on_remove(async_track_time_interval(self.hass, self._check_stale, _STALE_CHECK))
-        self._update(self.hass.states.get(self._source))
-
-    @callback
-    def _source_changed(self, event: Event[EventStateChangedData]) -> None:
-        self._update(event.data["new_state"])
-        self.async_write_ha_state()
-
-    @callback
-    def _refresh(self) -> None:
-        self._update(self.hass.states.get(self._source))
-        self.async_write_ha_state()
-
-    @callback
-    def _source_reported(self, _event: Event[EventStateReportedData]) -> None:
-        self._check_stale()
-
-    @callback
-    def _check_stale(self, _now: datetime | None = None) -> None:
-        was_available = self._attr_available
-        self._update(self.hass.states.get(self._source))
-        if self._attr_available != was_available:
-            self.async_write_ha_state()
-
-    @callback
-    def _update(self, state: State | None) -> None:
-        reading = reading_of(state)
-        self._attr_available = reading is not None and not self._stale(state)
+    def _apply(self, reading: float | None) -> None:
+        self._attr_available = reading is not None
         self._attr_native_value = None if reading is None else self._value(reading)
-
-    def _stale(self, state: State | None) -> bool:
-        minutes = self._entry.options.get(CONF_STALE_MINUTES, 0)
-        # last_reported also moves when a source repeats the same value.
-        return (
-            state is not None
-            and minutes > 0
-            and dt_util.utcnow() - state.last_reported > timedelta(minutes=minutes)
-        )
 
     def _value(self, reading: float) -> float:
         return reading
@@ -133,14 +53,10 @@ class MoistureSensor(_SourceSensor):
     _attr_suggested_display_precision = 0
 
     def __init__(self, entry: ConfigEntry) -> None:
-        options = entry.options
-        super().__init__(
-            entry, "moisture", options.get(CONF_RAW_SOURCE) or options[CONF_MOISTURE_SOURCE]
-        )
+        super().__init__(entry, "moisture", moisture_source(entry.options))
 
     def _value(self, reading: float) -> float:
-        low, high = calibration_keys(self._entry.options)
-        return calibrated_moisture(reading, self._entry.options[low], self._entry.options[high])
+        return moisture_of(self._entry.options, reading)
 
 
 class RawSensor(_SourceSensor):

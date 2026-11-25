@@ -14,12 +14,16 @@ from .const import (
     CONF_AD0,
     CONF_AD100,
     CONF_DRY_TARGET,
+    CONF_LOW_THRESHOLD,
     CONF_PCT0,
     CONF_PCT100,
     CONF_RAW_SOURCE,
     CONF_STALE_MINUTES,
+    CONF_THRESHOLD_MARGIN,
     CONF_WET_TARGET,
     DEFAULT_DRY_TARGET,
+    DEFAULT_LOW_THRESHOLD,
+    DEFAULT_THRESHOLD_MARGIN,
     DEFAULT_WET_TARGET,
     calibration_signal,
 )
@@ -32,7 +36,19 @@ _TARGETS = {
 }
 # 0 turns the timeout off; a day is far beyond any probe's reporting interval.
 _STALE_LIMITS = (0, 1440, 0)
-_ALL_KEYS = {CONF_AD0, CONF_AD100, CONF_PCT0, CONF_PCT100, CONF_STALE_MINUTES, *_TARGETS}
+_THRESHOLDS = {
+    CONF_LOW_THRESHOLD: (0, 100, DEFAULT_LOW_THRESHOLD),
+    CONF_THRESHOLD_MARGIN: (0, 20, DEFAULT_THRESHOLD_MARGIN),
+}
+_ALL_KEYS = {
+    CONF_AD0,
+    CONF_AD100,
+    CONF_PCT0,
+    CONF_PCT100,
+    CONF_STALE_MINUTES,
+    *_TARGETS,
+    *_THRESHOLDS,
+}
 
 
 async def async_setup_entry(
@@ -51,6 +67,10 @@ async def async_setup_entry(
             for key, (minimum, maximum, default) in _TARGETS.items()
         ]
     entities.append(DefaultedNumber(entry, CONF_STALE_MINUTES, *_STALE_LIMITS, UnitOfTime.MINUTES))
+    entities += [
+        DefaultedNumber(entry, key, minimum, maximum, default, PERCENTAGE)
+        for key, (minimum, maximum, default) in _THRESHOLDS.items()
+    ]
     remove_unused_entities(hass, entry, "number", _ALL_KEYS - {entity.key for entity in entities})
     async_add_entities(entities)
 
@@ -109,7 +129,7 @@ class PointNumber(_OptionNumber):
 
 
 class DefaultedNumber(_OptionNumber):
-    """A setting that has a default until it is first changed: a capture target or the timeout."""
+    """A setting that has a default until it is first changed."""
 
     def __init__(
         self,
