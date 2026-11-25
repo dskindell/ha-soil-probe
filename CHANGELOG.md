@@ -2,6 +2,12 @@
 
 All notable changes are listed here. Versions follow [Semantic Versioning](https://semver.org/); betas are published as GitHub pre-releases, which HACS offers only to those who turn on the repository's pre-release switch.
 
+## [0.1.0-beta.5] - 2026-11-25
+
+### Added
+
+- A `Label` on each probe's device page, and an optional Label field when adding a probe: a name you can change, for example when you move the probe, without renaming the device or its entities. Until one is set it shows the device's current name.
+
 ## [0.1.0-beta.4] - 2026-11-24
 
 ### Fixed
